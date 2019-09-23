@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<component name="org.nuxeo.ecm.sync.jcr.testContrib.repository">
+
+  <require>org.nuxeo.ecm.sync.jcr.service.JCRRemoteServiceComponent</require>
+
+  <extension target="org.nuxeo.ecm.sync.jcr.service.JCRRemoteServiceComponent" point="connection">
+    <connection name="remoteNuxeo" enabled="true" binding="browser">
+      <repository>default</repository>
+      <url>http://localhost:9000/server</url>
+      <username>admin</username>
+      <credentials>admin</credentials>
+      
+      <!-- In this test (Nuxeo -> Nuxeo) we map to the same doc types -->
+      <doctype-mapping>
+        <doctype value="File">File</doctype>
+        <doctype value="Note">Note</doctype>
+        <doctype value="Picture">Picture</doctype>
+        <!-- Video and Audio become File in this test -->
+        <doctype value="Video">File</doctype>
+        <doctype value="Audio">File</doctype>
+      </doctype-mapping>
+
+      <field-mapping name="Copy Description for Everything" xpath="dc:description"
+        property="jcr:description" />
+
+      <ace-mapping>
+        <method>addIfNotSet</method>
+        <remoteAce value="jcr:read">Read</remoteAce>
+        <remoteAce value="jcr:write">ReadWrite</remoteAce>
+        <remoteAce value="jcr:all">Everything</remoteAce>
+        <remoteAce value="Everything">Everything</remoteAce>
+      </ace-mapping>
+
+    </connection>
+    
+    <connection name="remoteNuxeoReplacePermissions" enabled="true" binding="browser">
+      <repository>default</repository>
+      <url>http://localhost:9000/server</url>
+      <username>admin</username>
+      <credentials>admin</credentials>
+
+      <field-mapping name="Copy Description for Everything" xpath="dc:description"
+        property="jcr:description" />
+
+      <ace-mapping>
+        <method>replaceAll</method>
+        <remoteAce value="jcr:read">Read</remoteAce>
+        <remoteAce value="jcr:write">ReadWrite</remoteAce>
+        <remoteAce value="jcr:all">Everything</remoteAce>
+        <remoteAce value="Everything">Everything</remoteAce>
+      </ace-mapping>
+
+    </connection>
+  </extension>
+</component>

@@ -1,0 +1,220 @@
+<!--
+@license
+(C) Copyright Nuxeo Corp. (http://nuxeo.com/)
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<!--
+A button element for synchronizing JCR content
+
+Example:
+
+    <jcr-sync document="[[document]]"></jcr-sync>
+
+@group Nuxeo UI
+@element jcr-sync
+-->
+<dom-module id="jcr-sync">
+  <template>
+    <style>
+      :host {
+        display: inline-block;
+      }
+
+      .synced {
+        color: var(--nuxeo-validated);
+      }
+
+      .unsync {
+        color: var(--nuxeo-warn-text);
+      }
+    </style>
+
+    <nuxeo-operation id="jcrConnections" op="Repository.JCRConnections" auto on-response="_parseConnections"></nuxeo-operation>
+    <nuxeo-operation id="jcrSync" op="Document.JCRSync" input="[[document.uid]]" params="[[_params(connection, remotePath)]]"></nuxeo-operation>
+
+    <template is="dom-if" if="[[_isAvailable(document)]]">
+      <div class="action" on-click="_toggleDialog">
+        <paper-icon-button class$="[[synced]]" icon="[[icon]]" noink></paper-icon-button>
+        <span class="label" hidden$="[[!showLabel]]">[[label]]</span>
+      </div>
+      <paper-tooltip>[[label]]</paper-tooltip>
+    </template>
+
+    <nuxeo-dialog id="dialog" with-backdrop>
+      <h2>JCR Settings</h2>
+
+      <nuxeo-select id="connection" label="Connection" selected="{{connection}}" attr-for-selected="key">
+        <dom-repeat items="[[connections]]" as="item">
+          <template>
+            <paper-item key="[[item]]">[[item]]</paper-item>
+          </template>
+        </dom-repeat>
+      </nuxeo-select>
+      <paper-input id="remotePath" label="Remote Path" value="{{remotePath}}"></paper-input>
+
+      <div class="buttons">
+        <paper-button dialog-dismiss>Cancel</paper-button>
+        <paper-button class="primary" disabled="[[!selectedConnection]]" dialog-confirm on-click="_sync">Synchronize</paper-button>
+      </div>
+    </nuxeo-dialog>
+
+
+  </template>
+  <script>
+    Polymer({
+      is: 'jcr-sync',
+      behaviors: [Nuxeo.I18nBehavior, Nuxeo.FiltersBehavior],
+      properties: {
+
+        document: {
+          type: Object,
+          observer: "_documentChanged"
+        },
+
+        uid: {
+          type: String
+        },
+
+        icon: {
+          type: String,
+          value: 'icons:compare-arrows'
+        },
+
+        connections: {
+          type: Array
+        },
+
+        connection: {
+          type: String,
+        },
+
+        remotePath: {
+          type: String,
+          value: ""
+        },
+
+        configured: {
+          type: String,
+          value: "no"
+        },
+
+        synced: {
+          type: String,
+          value: ""
+        },
+
+        label: {
+          type: String,
+          value: "Synchronize Content"
+        },
+
+        showLabel: {
+          type: Boolean,
+          value: false
+        }
+      },
+
+      _isAvailable: function (document) {
+        return document;
+      },
+
+      _parseConnections: function (response) {
+        this.connections = response.detail.response.value.split(',');
+        if (this.connections.length > 0) {
+          this.connection = this.connections[0];
+        }
+      },
+
+      _documentChanged: function () {
+        if (this.document.uid !== this.uid) {
+          this.configured = "no";
+          this.connection = "";
+          this.remotePath = "";
+          this.uid = this.document.uid;
+          this.synced = "";
+          this.tooltip = "Synchronize";
+        }
+        if (this.configured == "no" && this.document && this.hasFacet(this.document, "JCRSync")) {
+          var val = this.document.properties["jcrsync:connection"];
+          if (val) {
+            this.connection = val;
+          }
+          val = this.document.properties["jcrsync:uid"];
+          if (val && val != "") {
+            this.remotePath = val;
+          } else {
+            val = this.document.properties["jcrsync:paths"];
+            if (val && val.length > 0) {
+              this.remotePath = val[0];
+            }
+          }
+
+          if (this.connection !== "" && this.remotePath !== "") {
+            this.configured = "yes";
+          }
+
+          // Check status
+          val = this.document.properties["jcrsync:synchronized"];
+          if (val && val != "") {
+            this.synced = "synced";
+            this.tooltip = "Synchronized on " + new Date(Date.parse(val));
+          } else {
+            this.synced = "unsync";
+          }
+        } else if (this.configured !== "yes") {
+          this.synced = "";
+          return;
+        }
+      },
+
+      _toggleDialog: function () {
+        if (this.configured == "yes") {
+          this._sync();
+        } else {
+          this.$.dialog.toggle();
+        }
+      },
+
+      _params: function (connection, remotePath) {
+        var idRef = remotePath.startsWith("/") == false;
+        return {
+          "connection": this.connection,
+          "remoteRef": this.remotePath,
+          "idRef": idRef,
+        };
+      },
+
+      _sync: function () {
+        if (this.document) {
+          this.$.jcrSync.execute().then(() => {
+            this.fire('document-updated');
+            this.fire('notify', {
+              message: "Document Synchronized"
+            });
+            this.synced = "synced";
+          }).catch((error) => {
+            console.log(error);
+            this.configured = "error";
+            this.fire('notify', {
+              message: "Synchronization Failed: " + error
+            });
+            this.synced = "unsync";
+          });
+        }
+      },
+
+    });
+  </script>
+</dom-module>

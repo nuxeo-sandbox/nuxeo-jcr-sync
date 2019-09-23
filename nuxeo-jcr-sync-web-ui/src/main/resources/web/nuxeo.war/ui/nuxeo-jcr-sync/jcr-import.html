@@ -1,0 +1,112 @@
+<!--
+@license
+(C) Copyright Nuxeo Corp. (http://nuxeo.com/)
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<!--
+A button element for importing JCR content
+
+Example:
+
+    <jcr-import document="[[document]]"></jcr-import>
+
+@group Nuxeo UI
+@element jcr-import
+-->
+<dom-module id="jcr-import">
+  <template>
+    <style>
+      :host {
+        display: inline-block;
+      }
+    </style>
+
+    <nuxeo-operation id="jcrImport" op="Repository.JCRImport" input="[[document.uid]]" params="[[_params(recursive)]]"></nuxeo-operation>
+
+    <template is="dom-if" if="[[_isAvailable(document)]]">
+      <div class="action" on-click="_toggleDialog">
+        <paper-icon-button icon="[[icon]]" noink></paper-icon-button>
+        <span class="label" hidden$="[[!showLabel]]">[[label]]</span>
+      </div>
+      <paper-tooltip>[[label]]</paper-tooltip>
+    </template>
+
+    <nuxeo-dialog id="dialog" with-backdrop>
+      <h2>JCR Import</h2>
+      <paper-checkbox noink checked="{{recursive}}">
+        Recursive?
+      </paper-checkbox>
+      <div class="buttons">
+        <paper-button dialog-dismiss>Cancel</paper-button>
+        <paper-button class="primary" dialog-confirm on-click="_import">Import</paper-button>
+      </div>
+    </nuxeo-dialog>
+  </template>
+  <script>
+    Polymer({
+      is: 'jcr-import',
+      behaviors: [Nuxeo.I18nBehavior, Nuxeo.FiltersBehavior],
+      properties: {
+
+        document: Object,
+
+        icon: {
+          type: String,
+          value: 'icons:settings-backup-restore'
+        },
+
+        recursive: {
+          type: Boolean,
+          value: true
+        },
+
+        label: {
+          type: String,
+          value: 'Import Remote Children'
+        },
+
+        showLabel: {
+          type: Boolean,
+          value: false
+        }
+
+      },
+
+      _isAvailable: function (document) {
+        return document && document.properties && document.properties["jcrsync:uid"];
+      },
+
+      _params: function () {
+        return {
+          "state": this.recursive ? "queued" : null
+        };
+      },
+
+      _toggleDialog: function () {
+        this.$.dialog.toggle();
+      },
+
+      _import: function () {
+        this.$.jcrImport.execute().then(() => {
+          this.fire('document-updated');
+          this.fire('notify', {
+            message: "Children Imported (" + (this.recursive ? "recursive" : "non-recursive") + ")"
+          });
+        });
+      }
+
+    });
+  </script>
+</dom-module>

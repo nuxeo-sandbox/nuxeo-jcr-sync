@@ -1,0 +1,126 @@
+<!--
+@license
+(C) Copyright Nuxeo Corp. (http://nuxeo.com/)
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<!--
+A button element for bulk synchronizing JCR content
+
+Example:
+
+    <jcr-sync-selection documents="[[selectedItems]]"></jcr-sync-selection>
+
+@group Nuxeo UI
+@element jcr-sync-selection
+-->
+<dom-module id="jcr-sync-selection">
+  <template>
+    <style>
+      :host {
+        display: inline-block;
+      }
+
+      ::content iron-icon:hover {
+        fill: var(--nuxeo-link-hover-color);
+      }
+    </style>
+
+    <nuxeo-operation id="jcrSync" op="Document.JCRSync" sync-indexing></nuxeo-operation>
+
+    <template is="dom-if" if="[[_isAvailable(document.splices)]]">
+      <div class="action" on-click="_toggleDialog">
+        <paper-icon-button icon="[[_icon]]" noink id="jcrSyncButton"></paper-icon-button>
+        <span class="label" hidden$="[[!showLabel]]">[[label]]</span>
+      </div>
+      <paper-tooltip>[[label]]</paper-tooltip>
+    </template>
+  </template>
+  <script>
+    Polymer({
+      is: 'jcr-sync-selection',
+      behaviors: [Nuxeo.I18nBehavior, Nuxeo.FiltersBehavior],
+      properties: {
+
+        documents: {
+          type: Array,
+          notify: true,
+          value: []
+        },
+
+        tooltipPosition: {
+          type: String,
+          value: 'bottom'
+        },
+
+        _icon: {
+          type: 'String',
+          value: 'icons:compare-arrows'
+        },
+
+        label: {
+          type: 'String',
+          value: 'Synchronize JCR Documents'
+        },
+
+        showLabel: {
+          type: Boolean,
+          value: false
+        }
+      },
+
+      listeners: {
+        'tap': 'syncDocuments'
+      },
+
+      _isAvailable: function () {
+        return this.documents && this.documents.length > 0 && this._checkDocsState();
+      },
+
+      _checkDocsState: function() {
+        this.docsHaveSync = this.documents && !(this.documents.some(
+          function(document) {
+            return !this._docHasSync(document);
+          }.bind(this)));
+        return this.docsHaveSync;
+      },
+
+      /*
+       * Checks if a single given document has JCR sync attributes
+       */
+      _docHasSync: function(document) {
+        return this.hasFacet(document, "JCRSync");
+      },
+
+      syncDocuments: function() {
+        if (this.docsHaveSync) {
+          if (this.documents && this.documents.length) {
+            var uids = this.documents.map(function(doc) {
+              return doc.uid;
+            }).join(',');
+            var op = this.$.jcrSync;
+            op.input = 'docs:' + uids;
+            op.execute().then(function() {
+              this.fire('refresh');
+            }.bind(this),
+            function(error) {
+              console.log(error);
+            }.bind(this));
+          }
+        }
+      },
+
+    });
+  </script>
+</dom-module>

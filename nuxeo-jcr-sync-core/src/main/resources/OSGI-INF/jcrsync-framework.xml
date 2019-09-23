@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+<component name="org.nuxeo.ecm.sync.jcr.service.JCRRemoteServiceComponent">
+  <implementation class="org.nuxeo.ecm.sync.jcr.service.impl.JCRRemoteServiceComponent" />
+
+  <documentation>
+    @author Damon Brown (dbrown@nuxeo.com)
+  </documentation>
+
+  <service>
+    <provide interface="org.nuxeo.ecm.sync.jcr.api.JCRRemoteService" />
+  </service>
+
+  <extension-point name="connection">
+    <documentation>
+      example:
+      <code>
+        <connection name="remoteNuxeo" enabled="true" binding="repository">
+          <repository>default</repository>
+          <url>http://some.server.com/nuxeo/json/jcr</url>
+          <username>Administrator</username>
+          <credentials>123</credentials>
+          <property key="prop1">123</property>
+          <property key="prop2">something</property>
+
+          <!-- Example of a list of Document Types mapping -->
+          <doctype-mapping>
+            <!--  Example when mapping between 2 Nuxeo repositories -->
+            <doctype value="File">File</doctype>
+            <doctype value="Note">Note</doctype>
+            <doctype value="Picture">Picture</doctype>
+            <!-- Video and Audio become File in this example -->
+            <doctype value="Video">File</doctype>
+            <doctype value="Audio">File</doctype>
+            
+            <!--  Example with custom doc types remote/local -->
+            <doctype value="basecontract">Contract</doctype>
+            <doctype value="pdfdoc">File</doctype>
+            <doctype value="claim_image">Picture</doctype>
+           
+          </doctype-mapping>
+
+          <!-- Example of a list of field mapping -->
+          <field-mapping name="Copy Description for Everything" xpath="dc:description"
+            property="dc:description" />
+          <field-mapping name="Copy coverage for files" xpath="dc:coverage" property="dc:coverage"
+            doctype="File" />
+          <field-mapping name="Update value for picture" xpath="c:c" property="prop_c" doctype="Picture" />
+          <field-mapping name="Map custom distant field for files" xpath="contractNum"
+            property="customschema:contract" doctype="File" />
+
+          <!-- Example of a list of ACE mapping -->
+          <ace-mapping>
+            <method>addIfNotSet</method> <!-- other would be replaceAll -->
+            <remoteAce value="permToRead">Read</remoteAce>
+            <remoteAce value="permToWrite">ReadWrite</remoteAce>
+            <remoteAce value="permFprAll">Everything</remoteAce>
+          </ace-mapping>
+        </connection>
+      </code>
+    </documentation>
+    <object class="org.nuxeo.ecm.sync.jcr.service.impl.JCRConnectionDescriptor" />
+  </extension-point>
+
+</component>

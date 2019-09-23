@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<component name="org.nuxeo.ecm.sync.jcr.web.ui.resources.contrib">
+  <require>org.nuxeo.web.ui.resources</require>
+  <require>org.nuxeo.web.ui.properties.contrib</require>
+
+  <extension target="org.nuxeo.ecm.platform.WebResources" point="resources">
+    <resource name="nuxeo-jcr-sync.html" type="import" shrinkable="false">
+      <uri>/ui/nuxeo-jcr-sync/nuxeo-jcr-sync.html</uri>
+    </resource>
+  </extension>
+
+  <extension target="org.nuxeo.ecm.platform.WebResources" point="bundles">
+    <bundle name="web-ui">
+      <resources append="true">
+        <resource>nuxeo-jcr-sync.html</resource>
+      </resources>
+    </bundle>
+  </extension>
+
+  <extension target="org.nuxeo.runtime.ConfigurationService" point="configuration">
+    <property name="org.nuxeo.web.ui.enrichers" list="true">jcrRepos</property>
+  </extension>
+
+</component>
